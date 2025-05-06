@@ -1,0 +1,26 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pod_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", namespace=~"*"}'
+        values: ''
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: ''
+              source_cluster: ''
+            exp_annotations:
+              summary: >-
+                Pod ran out of memory.
+              description: >-
+                Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+                {{ $labels.source_cluster }} was killed due to OOM.
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md

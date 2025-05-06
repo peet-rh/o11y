@@ -83,3 +83,19 @@ spec:
         description: >-
           Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
           {{ $labels.source_cluster }} has been running above the requested cpu resources.
+
+    - alert: PodOOMKilled
+      expr: |
+        kube_pod_container_status_terminated_reason{reason="OOMKilled", namespace=~"*"} >= 1
+      for: 1m
+      labels:
+        severity: high
+      annotations:
+        team: o11y
+        slo: "true"
+        summary: >-
+          Pod {{ $labels.pod }} be trippin; got got - OOMKilled.
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} was killed due to OOM.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md
