@@ -1,0 +1,43 @@
+rule_files:
+  - prometheus.pod_alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  ## Test if any Pods have been killed due to OOM ##
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", source_cluster="cluster01", namespace="ns-1", pod="pod-1"}'
+        values: '1x60'
+
+      # - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)", source_cluster="cluster01"}'
+      #  values: '1x1440'
+      # - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", namespace="(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}'
+
+      #   values: '1x1440'
+      # - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)", source_cluster="cluster03"}'
+      #  values: '1x1440'
+
+      # - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)", source_cluster="cluster04"}'
+      #  values: '1x1440'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              # severity: critical  (to avoid alerting PD during testing)
+              severity: warning
+              source_cluster: cluster01
+              namespace: ns-1
+              pod: pod-1
+              reason: OOMKilled
+            exp_annotations:
+              # team: o11y (to avoid alerting PD during testing)
+              slo: "false"
+              summary: >-
+                Pod pod-1 ran out of memory - OOMKilled.
+              description: >-
+                Pod pod-1 in namespace ns-1 was killed due to OOM.
+              alert_routing_key: ns-1
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md
